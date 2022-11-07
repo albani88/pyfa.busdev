@@ -55,6 +55,38 @@ namespace pyfa.busdev.Controllers
             return jOut;
         }
 
+        [HttpPost("submit")]
+        public JObject SubmitApplication([FromBody] JObject json)
+        {
+            JObject jOut = new JObject();
+
+            try
+            {
+                var res = bx.sumbitaplikasi(json);
+                if (res == "success")
+                {
+                    jOut = new JObject();
+                    jOut.Add("status", mc.GetMessage("api_output_ok"));
+                    jOut.Add("message", mc.GetMessage("save_success"));
+                }
+                else
+                {
+                    jOut = new JObject();
+                    jOut.Add("status", mc.GetMessage("api_output_not_ok"));
+                    jOut.Add("message", res);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                jOut = new JObject();
+                jOut.Add("status", mc.GetMessage("api_output_not_ok"));
+                jOut.Add("message", ex.Message);
+            }
+
+            return jOut;
+        }
+
 
         [HttpPost("DynamicAdvance")]
         public IActionResult DynamicAdvance([FromBody] JObject json)
@@ -63,9 +95,13 @@ namespace pyfa.busdev.Controllers
             var jOut = new JObject();
             var jaResMaster = new JArray();
             var jaMasterFrm = new JArray();
+            var jaMasterFrmhdr = new JArray();
             var jaForm = new JArray();
-            var jData = new JObject();
             var jaContent = new JArray();
+            var jaGroupContent = new JArray();
+            var jaFormcounten = new JArray();
+            var jData = new JObject();
+  
 
             var retHeadById = new List<dynamic>();
             var retObject = new List<dynamic>();
@@ -79,11 +115,12 @@ namespace pyfa.busdev.Controllers
 
             var objDataDtr = new JObject();
             var joHead = new JObject();
+            var jocontent = new JObject();
             var jFormDetData = new JObject();
             var jFormCont = new JObject();
             var jDrpDet = new JObject();
 
-            string  hid = "0";
+            string hid = "0";
             int mid = 0;
 
             try
@@ -95,129 +132,145 @@ namespace pyfa.busdev.Controllers
                     int groupid = Int32.Parse(jaResMaster[0]["mtg_id"].ToString());
                     for (int i = 0; i < jaResMaster.Count; i++)
                     {
-                        joHead = new JObject();
+
                         var tempcode = jaResMaster[i]["mgd_temp_code"].ToString();
-                        jaMasterFrm = ldl.getdatamasterformbytmpcode(tempcode);
+                        jaMasterFrmhdr = ldl.getdatamasterformhdrbytmpcode(tempcode);
 
-                        if (jaMasterFrm.Count > 0)
+                        if (jaMasterFrmhdr.Count > 0)
                         {
-                            string typ = jaMasterFrm[0]["mfh_content_type"].ToString().ToLower();
-                            hid = jaMasterFrm[0]["mfh_id"].ToString();
+                           
+                            joHead = new JObject();
                             joHead.Add("counter", jaResMaster[i]["mgd_counter"].ToString());
-                            joHead.Add("temp_id", jaMasterFrm[0]["mfh_id"].ToString());
-                            joHead.Add("temp_code", jaMasterFrm[0]["mfh_tamp_code"].ToString());
-                            joHead.Add("temp_headername", jaMasterFrm[0]["mfh_tamp_name"].ToString());
-                            joHead.Add("temp_contenttype", jaMasterFrm[0]["mfh_content_type"].ToString());
-
-                            if (typ == "form")
+                            joHead.Add("temp_id", jaMasterFrmhdr[0]["mfh_id"].ToString());
+                            joHead.Add("temp_code", jaMasterFrmhdr[0]["mfh_tamp_code"].ToString());
+                            joHead.Add("temp_headername", jaMasterFrmhdr[0]["mfh_header_name"].ToString());
+                            jaMasterFrm = ldl.getdatamasterformbytmpcode(tempcode);
+                            if (jaMasterFrm.Count > 0)
                             {
-                                jaForm = new JArray();
-                                jaRowForm = new List<dynamic>();
-                                jaRowForm = ldl.getdatamasterformdtlbyid(hid);
-                                for (int index = 0; index < jaRowForm.Count; index++)
+                                jaContent = new JArray();
+                                for (int a = 0; a < jaMasterFrm.Count; a++)
                                 {
-                                    jaFormDet = new JArray();
-                                    mid = jaRowForm[index].mfd_field_id;
-                                    retFormDet = ldl.getdatamasterfieldtlbyfieldid(mid);
-                                    for (int x = 0; x < retFormDet.Count; x++)
+                                   
+                                    jocontent = new JObject();
+                                    hid = jaMasterFrm[a]["msf_id"].ToString();
+                                    string typ = jaMasterFrm[a]["msf_content_type"].ToString().ToLower();
+                                    jocontent.Add("form_number", jaMasterFrm[a]["msf_counter"].ToString());
+                                    jocontent.Add("temp_name", jaMasterFrm[a]["msf_content_name"].ToString());
+                                    jocontent.Add("temp_contenttype", jaMasterFrm[a]["msf_content_type"].ToString());
+                                    if (typ == "form")
                                     {
-                                        jFormDetData = new JObject();
-                                        jFormDetData.Add("field_id", retFormDet[x].mfd_id);
-                                        jFormDetData.Add("field_type", retFormDet[x].mfd_type_element);
-                                        jFormDetData.Add("label", retFormDet[x].mfd_label_name);
-                                        jFormDetData.Add("needs", retFormDet[x].mfd_required);
-                                        jFormDetData.Add("placeholder", retFormDet[x].mfd_placeholder);
-                                        jFormDetData.Add("format", retFormDet[x].mfd_format);
-                                        jFormDetData.Add("length", retFormDet[x].mfd_length);
-                                        jFormDetData.Add("source", retFormDet[x].mfd_source);
-
-                                        string codeddl = retFormDet[x].mfd_source;
-                                        string typefield = retFormDet[x].mfd_type_element;
-                                        jaDrp = new JArray();
-                                        if ((typefield.ToLower() == "dropdownlist") || (typefield.ToLower() == "dropdownlistReadonly") || (typefield.ToLower() == "radio"))
+                                        jaForm = new JArray();
+                                        jaRowForm = new List<dynamic>();
+                                        jaRowForm = ldl.getdatamasterformdtlbyid(hid);
+                                        for (int index = 0; index < jaRowForm.Count; index++)
                                         {
-                                            var jDrp = ldl.getdynamicoptionbyscourecode(codeddl);
-                                            for (int z = 0; z < jDrp.Count; z++)
+                                            jaFormDet = new JArray();
+                                            mid = jaRowForm[index].mfd_field_id;
+                                            retFormDet = ldl.getdatamasterfieldtlbyfieldid(mid);
+                                            for (int x = 0; x < retFormDet.Count; x++)
                                             {
-                                                jDrpDet = new JObject();
-                                                jDrpDet.Add("urut", jDrp[z]["ddp_counter"].ToString() ?? "");
-                                                jDrpDet.Add("val", jDrp[z]["ddp_value"].ToString() ?? "");
-                                                jDrpDet.Add("text", jDrp[z]["ddp_name"].ToString() ?? "");
-                                                jaDrp.Add(jDrpDet);
+                                                jFormDetData = new JObject();
+                                                jFormDetData.Add("field_id", retFormDet[x].mfd_id);
+                                                jFormDetData.Add("field_type", retFormDet[x].mfd_type_element);
+                                                jFormDetData.Add("label", retFormDet[x].mfd_label_name);
+                                                jFormDetData.Add("needs", retFormDet[x].mfd_required);
+                                                jFormDetData.Add("placeholder", retFormDet[x].mfd_placeholder);
+                                                jFormDetData.Add("format", retFormDet[x].mfd_format);
+                                                jFormDetData.Add("length", retFormDet[x].mfd_length);
+                                                jFormDetData.Add("source", retFormDet[x].mfd_source);
+
+                                                string codeddl = retFormDet[x].mfd_source;
+                                                string typefield = retFormDet[x].mfd_type_element;
+                                                jaDrp = new JArray();
+                                                if ((typefield.ToLower() == "dropdownlist") || (typefield.ToLower() == "dropdownlistReadonly") || (typefield.ToLower() == "radio"))
+                                                {
+                                                    var jDrp = ldl.getdynamicoptionbyscourecode(codeddl);
+                                                    for (int z = 0; z < jDrp.Count; z++)
+                                                    {
+                                                        jDrpDet = new JObject();
+                                                        jDrpDet.Add("urut", jDrp[z]["ddp_counter"].ToString() ?? "");
+                                                        jDrpDet.Add("val", jDrp[z]["ddp_value"].ToString() ?? "");
+                                                        jDrpDet.Add("text", jDrp[z]["ddp_name"].ToString() ?? "");
+                                                        jaDrp.Add(jDrpDet);
+                                                    }
+                                                }
+
+                                                jFormDetData.Add("connected", jaDrp);
+                                                jaFormDet.Add(jFormDetData);
+
                                             }
+                                            jFormCont = new JObject();
+                                            jFormCont.Add("row", jaRowForm[index].mfd_counter);
+                                            jFormCont.Add("object", jaFormDet);
+                                            jaForm.Add(jFormCont);
                                         }
 
-                                        jFormDetData.Add("connected", jaDrp);
-                                        jaFormDet.Add(jFormDetData);
-
+                                        jocontent.Add("form_content", jaForm);
                                     }
-                                    jFormCont = new JObject();
-                                    jFormCont.Add("row", jaRowForm[index].mfd_counter);
-                                    jFormCont.Add("object", jaFormDet);
-                                    jaForm.Add(jFormCont);
-                                }
-
-
-
-                                joHead.Add("contents", jaForm);
-                            }
-                            else if (typ == "datarow")
-                            {
-                                jaForm = new JArray();
-                                jaRowForm = new List<dynamic>();
-                                jaRowForm = ldl.getdatamasterformdtlbyid(hid);
-                                for (int index = 0; index < jaRowForm.Count; index++)
-                                {
-                                    jaFormDet = new JArray();
-                                    mid = jaRowForm[index].mfd_field_id;
-                                    retFormDet = ldl.getdatamasterfieldtlbyfieldid(mid);
-                                    for (int x = 0; x < retFormDet.Count; x++)
+                                    else if (typ == "datarow")
                                     {
-                                        jFormDetData = new JObject();
-                                        jFormDetData.Add("field_id", retFormDet[x].mfd_id);
-                                        jFormDetData.Add("field_type", retFormDet[x].mfd_type_element);
-                                        jFormDetData.Add("label", retFormDet[x].mfd_label_name);
-                                        jFormDetData.Add("needs", retFormDet[x].mfd_required);
-                                        jFormDetData.Add("placeholder", retFormDet[x].mfd_placeholder);
-                                        jFormDetData.Add("format", retFormDet[x].mfd_format);
-                                        jFormDetData.Add("length", retFormDet[x].mfd_length);
-                                        jFormDetData.Add("source", retFormDet[x].mfd_source);
-
-                                        string codeddl = retFormDet[x].mfd_source;
-                                        string typefield = retFormDet[x].mfd_type_element;
-                                        jaDrp = new JArray();
-                                        if ((typefield.ToLower() == "dropdownlist") || (typefield.ToLower() == "dropdownlistReadonly") || (typefield.ToLower() == "radio"))
+                                        jaForm = new JArray();
+                                        jaRowForm = new List<dynamic>();
+                                        jaRowForm = ldl.getdatamasterformdtlbyid(hid);
+                                        for (int index = 0; index < jaRowForm.Count; index++)
                                         {
-                                            var jDrp = ldl.getdynamicoptionbyscourecode(codeddl);
-                                            for (int z = 0; z < jDrp.Count; z++)
+                                            jaFormDet = new JArray();
+                                            mid = jaRowForm[index].mfd_field_id;
+                                            retFormDet = ldl.getdatamasterfieldtlbyfieldid(mid);
+                                            for (int x = 0; x < retFormDet.Count; x++)
                                             {
-                                                jDrpDet = new JObject();
-                                                jDrpDet.Add("urut", jDrp[z]["ddp_counter"].ToString() ?? "");
-                                                jDrpDet.Add("val", jDrp[z]["ddp_value"].ToString() ?? "");
-                                                jDrpDet.Add("text", jDrp[z]["ddp_name"].ToString() ?? "");
-                                                jaDrp.Add(jDrpDet);
+                                                jFormDetData = new JObject();
+                                                jFormDetData.Add("field_id", retFormDet[x].mfd_id);
+                                                jFormDetData.Add("field_type", retFormDet[x].mfd_type_element);
+                                                jFormDetData.Add("label", retFormDet[x].mfd_label_name);
+                                                jFormDetData.Add("needs", retFormDet[x].mfd_required);
+                                                jFormDetData.Add("placeholder", retFormDet[x].mfd_placeholder);
+                                                jFormDetData.Add("format", retFormDet[x].mfd_format);
+                                                jFormDetData.Add("length", retFormDet[x].mfd_length);
+                                                jFormDetData.Add("source", retFormDet[x].mfd_source);
+
+                                                string codeddl = retFormDet[x].mfd_source;
+                                                string typefield = retFormDet[x].mfd_type_element;
+                                                jaDrp = new JArray();
+                                                if ((typefield.ToLower() == "dropdownlist") || (typefield.ToLower() == "dropdownlistReadonly") || (typefield.ToLower() == "radio"))
+                                                {
+                                                    var jDrp = ldl.getdynamicoptionbyscourecode(codeddl);
+                                                    for (int z = 0; z < jDrp.Count; z++)
+                                                    {
+                                                        jDrpDet = new JObject();
+                                                        jDrpDet.Add("urut", jDrp[z]["ddp_counter"].ToString() ?? "");
+                                                        jDrpDet.Add("val", jDrp[z]["ddp_value"].ToString() ?? "");
+                                                        jDrpDet.Add("text", jDrp[z]["ddp_name"].ToString() ?? "");
+                                                        jaDrp.Add(jDrpDet);
+                                                    }
+                                                }
+
+                                                jFormDetData.Add("connected", jaDrp);
+                                                jaFormDet.Add(jFormDetData);
+
                                             }
+                                            jFormCont = new JObject();
+                                            jFormCont.Add("row", jaRowForm[index].mfd_counter);
+                                            jFormCont.Add("object", jaFormDet);
+                                            jaForm.Add(jFormCont);
                                         }
 
-                                        jFormDetData.Add("connected", jaDrp);
-                                        jaFormDet.Add(jFormDetData);
+                                        jocontent.Add("form_content", jaForm);
 
                                     }
-                                    jFormCont = new JObject();
-                                    jFormCont.Add("row", jaRowForm[index].mfd_counter);
-                                    jFormCont.Add("object", jaFormDet);
-                                    jaForm.Add(jFormCont);
+                                    else
+                                    {
+                                        jocontent.Add("form_content", new JArray());
+                                    }
+                                    jaContent.Add(jocontent);
                                 }
-                                joHead.Add("contents", jaForm);
-                            }
-                            else
-                            {
-                               
-                                    joHead.Add("contents", new JArray());
-                            }
 
+                              
+                            }
+                            joHead.Add("contents", jaContent);
                         }
-                        jaContent.Add(joHead);
+                        
+                        jaGroupContent.Add(joHead);
                     }
 
                     jData.Add("group_id", jaResMaster[0]["mtg_id"].ToString());
@@ -225,7 +278,7 @@ namespace pyfa.busdev.Controllers
                     jData.Add("group_assignto", jaResMaster[0]["mtg_is_user"].ToString());
                     jData.Add("group_desc", jaResMaster[0]["mtg_desc"].ToString());
                     jData.Add("status", jaResMaster[0]["mtg_status"].ToString());
-                    jData.Add("form_content", jaContent);
+                    jData.Add("group_content", jaGroupContent);
 
                     jOut = new JObject();
                     jOut.Add("status", mc.GetMessage("api_output_ok"));
@@ -253,36 +306,201 @@ namespace pyfa.busdev.Controllers
 
         }
 
-        [HttpPost("submit")]
-        public JObject SubmitApplication([FromBody] JObject json)
-        {
-            JObject jOut = new JObject();
 
-            try
-            {
-                    var res = bx.sumbitaplikasi(json);
-                    if (res == "success")
-                    {
-                        jOut = new JObject();
-                        jOut.Add("status", mc.GetMessage("api_output_ok"));
-                        jOut.Add("message", mc.GetMessage("save_success"));
-                    }
-                    else
-                    {
-                        jOut = new JObject();
-                        jOut.Add("status", mc.GetMessage("api_output_not_ok"));
-                        jOut.Add("message", res);
-                    }
+        //[HttpPost("DynamicAdvance")]
+        //public IActionResult DynamicAdvance([FromBody] JObject json)
+        //{
+        //    int code = 200;
+        //    var jOut = new JObject();
+        //    var jaResMaster = new JArray();
+        //    var jaMasterFrm = new JArray();
+        //    var jaForm = new JArray();
+        //    var jData = new JObject();
+        //    var jaContent = new JArray();
 
-            }
-            catch (Exception ex)
-            {
-                jOut = new JObject();
-                jOut.Add("status", mc.GetMessage("api_output_not_ok"));
-                jOut.Add("message", ex.Message);
-            }
+        //    var retHeadById = new List<dynamic>();
+        //    var retObject = new List<dynamic>();
+        //    var jaRowForm = new List<dynamic>();
+        //    var retFormDet = new List<dynamic>();
 
-            return jOut;
-        }
+        //    var arrDataDtr = new JArray();
+        //    var arrItems = new JArray();
+        //    var jaFormDet = new JArray();
+        //    var jaDrp = new JArray();
+
+        //    var objDataDtr = new JObject();
+        //    var joHead = new JObject();
+        //    var jFormDetData = new JObject();
+        //    var jFormCont = new JObject();
+        //    var jDrpDet = new JObject();
+
+        //    string  hid = "0";
+        //    int mid = 0;
+
+        //    try
+        //    {
+
+        //        jaResMaster = ldl.DetailMasterGroupTemplate(json);
+        //        if (jaResMaster.Count > 0)
+        //        {
+        //            int groupid = Int32.Parse(jaResMaster[0]["mtg_id"].ToString());
+        //            for (int i = 0; i < jaResMaster.Count; i++)
+        //            {
+        //                joHead = new JObject();
+        //                var tempcode = jaResMaster[i]["mgd_temp_code"].ToString();
+        //                jaMasterFrm = ldl.getdatamasterformbytmpcode(tempcode);
+
+        //                if (jaMasterFrm.Count > 0)
+        //                {
+        //                    string typ = jaMasterFrm[0]["mfh_content_type"].ToString().ToLower();
+        //                    hid = jaMasterFrm[0]["mfh_id"].ToString();
+
+        //                    joHead.Add("temp_id", jaMasterFrm[0]["mfh_id"].ToString());
+        //                    joHead.Add("temp_code", jaMasterFrm[0]["mfh_tamp_code"].ToString());
+        //                    joHead.Add("temp_headername", jaMasterFrm[0]["mfh_tamp_name"].ToString());
+        //                    joHead.Add("temp_contenttype", jaMasterFrm[0]["mfh_content_type"].ToString());
+
+        //                    if (typ == "form")
+        //                    {
+        //                        jaForm = new JArray();
+        //                        jaRowForm = new List<dynamic>();
+        //                        jaRowForm = ldl.getdatamasterformdtlbyid(hid);
+        //                        for (int index = 0; index < jaRowForm.Count; index++)
+        //                        {
+        //                            jaFormDet = new JArray();
+        //                            mid = jaRowForm[index].mfd_field_id;
+        //                            retFormDet = ldl.getdatamasterfieldtlbyfieldid(mid);
+        //                            for (int x = 0; x < retFormDet.Count; x++)
+        //                            {
+        //                                jFormDetData = new JObject();
+        //                                jFormDetData.Add("field_id", retFormDet[i].mfd_id);
+        //                                jFormDetData.Add("field_type", retFormDet[i].mfd_type_element);
+        //                                jFormDetData.Add("label", retFormDet[i].mfd_label_name);
+        //                                jFormDetData.Add("needs", retFormDet[i].mfd_required);
+        //                                jFormDetData.Add("placeholder", retFormDet[i].mfd_placeholder);
+        //                                jFormDetData.Add("format", retFormDet[i].mfd_format);
+        //                                jFormDetData.Add("length", retFormDet[i].mfd_length);
+        //                                jFormDetData.Add("source", retFormDet[i].mfd_source);
+
+        //                                string codeddl = retFormDet[i].mfd_source;
+        //                                string typefield = retFormDet[i].mfd_type_element;
+        //                                jaDrp = new JArray();
+        //                                if ((typefield.ToLower() == "dropdownlist") || (typefield.ToLower() == "dropdownlistReadonly") || (typefield.ToLower() == "radio"))
+        //                                {
+        //                                    var jDrp = ldl.getdynamicoptionbyscourecode(codeddl);
+        //                                    for (int z = 0; z < jDrp.Count; z++)
+        //                                    {
+        //                                        jDrpDet = new JObject();
+        //                                        jDrpDet.Add("urut", jDrp[z]["ddp_counter"].ToString() ?? "");
+        //                                        jDrpDet.Add("val", jDrp[z]["ddp_value"].ToString() ?? "");
+        //                                        jDrpDet.Add("text", jDrp[z]["ddp_name"].ToString() ?? "");
+        //                                        jaDrp.Add(jDrpDet);
+        //                                    }
+        //                                }
+
+        //                                jFormDetData.Add("connected", jaDrp);
+        //                                jaFormDet.Add(jFormDetData);
+
+        //                            }
+        //                            jFormCont = new JObject();
+        //                            jFormCont.Add("row", jaRowForm[index].mfd_counter);
+        //                            jFormCont.Add("object", jaFormDet);
+        //                            jaForm.Add(jFormCont);
+        //                        }
+
+
+
+        //                        joHead.Add("contents", jaForm);
+        //                    }
+        //                    else if (typ == "datarow")
+        //                    {
+        //                        jaForm = new JArray();
+        //                        jaRowForm = new List<dynamic>();
+        //                        jaRowForm = ldl.getdatamasterformdtlbyid(hid);
+        //                        for (int index = 0; index < jaRowForm.Count; index++)
+        //                        {
+        //                            jaFormDet = new JArray();
+        //                            mid = jaRowForm[index].mfd_field_id;
+        //                            retFormDet = ldl.getdatamasterfieldtlbyfieldid(mid);
+        //                            for (int x = 0; x < retFormDet.Count; x++)
+        //                            {
+        //                                jFormDetData = new JObject();
+        //                                jFormDetData.Add("field_id", retFormDet[i].mfd_id);
+        //                                jFormDetData.Add("field_type", retFormDet[i].mfd_type_element);
+        //                                jFormDetData.Add("label", retFormDet[i].mfd_label_name);
+        //                                jFormDetData.Add("needs", retFormDet[i].mfd_required);
+        //                                jFormDetData.Add("placeholder", retFormDet[i].mfd_placeholder);
+        //                                jFormDetData.Add("format", retFormDet[i].mfd_format);
+        //                                jFormDetData.Add("length", retFormDet[i].mfd_length);
+        //                                jFormDetData.Add("source", retFormDet[i].mfd_source);
+
+        //                                string codeddl = retFormDet[i].mfd_source;
+        //                                string typefield = retFormDet[i].mfd_type_element;
+        //                                jaDrp = new JArray();
+        //                                if ((typefield.ToLower() == "dropdownlist") || (typefield.ToLower() == "dropdownlistReadonly") || (typefield.ToLower() == "radio"))
+        //                                {
+        //                                    var jDrp = ldl.getdynamicoptionbyscourecode(codeddl);
+        //                                    for (int z = 0; z < jDrp.Count; z++)
+        //                                    {
+        //                                        jDrpDet = new JObject();
+        //                                        jDrpDet.Add("urut", jDrp[z]["ddp_counter"].ToString() ?? "");
+        //                                        jDrpDet.Add("val", jDrp[z]["ddp_value"].ToString() ?? "");
+        //                                        jDrpDet.Add("text", jDrp[z]["ddp_name"].ToString() ?? "");
+        //                                        jaDrp.Add(jDrpDet);
+        //                                    }
+        //                                }
+
+        //                                jFormDetData.Add("connected", jaDrp);
+        //                                jaFormDet.Add(jFormDetData);
+
+        //                            }
+        //                            jFormCont = new JObject();
+        //                            jFormCont.Add("row", jaRowForm[index].mfd_counter);
+        //                            jFormCont.Add("object", jaFormDet);
+        //                            jaForm.Add(jFormCont);
+        //                        }
+        //                        joHead.Add("contents", jaForm);
+        //                    }
+        //                    else
+        //                    {
+
+        //                            joHead.Add("contents", new JArray());
+        //                    }
+
+        //                }
+        //                jaContent.Add(joHead);
+        //            }
+
+        //            jData.Add("group_id", jaResMaster[0]["mtg_id"].ToString());
+        //            jData.Add("group_code", jaResMaster[0]["mtg_code_group"].ToString());
+        //            jData.Add("group_assign", jaResMaster[0]["mtg_user"].ToString());
+        //            jData.Add("group_desc", jaResMaster[0]["mtg_desc"].ToString());
+        //            jData.Add("form_content", jaContent);
+
+        //            jOut = new JObject();
+        //            jOut.Add("status", mc.GetMessage("api_output_ok"));
+        //            jOut.Add("message", mc.GetMessage("process_success"));
+        //            jOut.Add("data", new JArray(jData));
+
+        //        }
+        //        else
+        //        {
+        //            jOut = new JObject();
+        //            jOut.Add("status", mc.GetMessage("api_output_not_ok"));
+        //            jOut.Add("message", "Form Not Found");
+        //        }
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        code = 500;
+        //        jOut = new JObject();
+        //        jOut.Add("status", mc.GetMessage("api_output_not_ok"));
+        //        jOut.Add("message", ex.Message);
+        //    }
+
+        //    return StatusCode(code, jOut);
+
+        //}
     }
 }
