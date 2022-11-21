@@ -111,7 +111,7 @@ namespace pyfa.busdev.libs
         {
             var builder = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
             var config = builder.Build();
-            // var configPass = lc.decrypt(config.GetSection("configPass:passwordDB").Value.ToString());
+            var configPass = lc.decrypt(config.GetSection("configPass:passwordDB").Value.ToString());
             var configDB = config.GetSection("DbContextSettings:" + strname).Value.ToString();
 
             //var repPass = configDB.Replace("{pass}", configPass);

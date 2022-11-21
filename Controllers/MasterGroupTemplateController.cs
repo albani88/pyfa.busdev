@@ -141,42 +141,42 @@ namespace pyfa.busdev.Controllers
             return StatusCode(code, jOut);
         }
 
-        //[HttpPost("update")]
-        //public IActionResult UpdateMasterForm([FromBody] JObject json)
-        //{
-        //    int code = 200;
-        //    JObject jOut = new JObject();
+        [HttpPost("update")]
+        public IActionResult UpdateMasterForm([FromBody] JObject json)
+        {
+            int code = 200;
+            JObject jOut = new JObject();
 
-        //    try
-        //    {
-        //        List<dynamic> retObject = new List<dynamic>();
+            try
+            {
+                List<dynamic> retObject = new List<dynamic>();
 
-        //        var res = bx.Insertmastergrouptemplate(json, "update");
-        //        if (res == "success")
-        //        {
-        //            code = 200;
-        //            jOut = new JObject();
-        //            jOut.Add("status", mc.GetMessage("api_output_ok"));
-        //            jOut.Add("message", mc.GetMessage("save_success"));
-        //        }
-        //        else
-        //        {
-        //            jOut = new JObject();
-        //            jOut.Add("status", mc.GetMessage("api_output_not_ok"));
-        //            jOut.Add("message", "Update Failed");
-        //        }
+                var res = bx.Insertmastergrouptemplate(json, "update");
+                if (res == "success")
+                {
+                    code = 200;
+                    jOut = new JObject();
+                    jOut.Add("status", mc.GetMessage("api_output_ok"));
+                    jOut.Add("message", mc.GetMessage("save_success"));
+                }
+                else
+                {
+                    jOut = new JObject();
+                    jOut.Add("status", mc.GetMessage("api_output_not_ok"));
+                    jOut.Add("message", "Update Failed");
+                }
 
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        jOut = new JObject();
-        //        code = 500;
-        //        jOut.Add("status", mc.GetMessage("api_output_not_ok"));
-        //        jOut.Add("message", ex.Message);
-        //    }
+            }
+            catch (Exception ex)
+            {
+                jOut = new JObject();
+                code = 500;
+                jOut.Add("status", mc.GetMessage("api_output_not_ok"));
+                jOut.Add("message", ex.Message);
+            }
 
-        //    return StatusCode(code, jOut);
-        //}
+            return StatusCode(code, jOut);
+        }
 
         [HttpPost("delete")]
         public JObject deletemastergrouptemplate([FromBody] JObject json)

@@ -40,13 +40,13 @@ namespace pyfa.busdev.Controllers
             {
 
                 SqlCommand cmd = new SqlCommand();
-                //if (actiontype == "update")
-                //{
-                //    cmd = new SqlCommand("sp_deletemastergrouptemplatebymfhid", connection, trans);
-                //    cmd.CommandType = CommandType.StoredProcedure;
-                //    cmd.Parameters.AddWithValue("@codegroup", json.GetValue("code_group").ToString());
-                //    cmd.ExecuteNonQuery();
-                //}
+                if (actiontype == "update")
+                {
+                    cmd = new SqlCommand("sp_deletemastergrouptemplatebymfhid", connection, trans);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@codegroup", json.GetValue("code_group").ToString());
+                    cmd.ExecuteNonQuery();
+                }
 
                 cmd = new SqlCommand("insert_master_group_template", connection, trans);
                 cmd.CommandType = CommandType.StoredProcedure;
